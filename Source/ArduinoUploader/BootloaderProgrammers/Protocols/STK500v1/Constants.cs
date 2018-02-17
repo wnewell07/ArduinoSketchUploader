@@ -13,6 +13,7 @@
         internal const byte CmdStkReadSignature = 0x75;
 
         internal const byte SyncCrcEop = 0x20;
+        internal const byte flashCode = 0x46;
 
         internal const byte RespStkOk = 0x10;
         internal const byte RespStkFailed = 0x11;

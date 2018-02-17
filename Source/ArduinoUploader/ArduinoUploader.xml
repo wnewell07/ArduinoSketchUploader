@@ -62,12 +62,12 @@
     <Arduino model="UnoR3">
       <Mcu>AtMega328P</Mcu>
       <BaudRate>115200</BaudRate>
-      <PreOpenResetBehavior>DTR;true</PreOpenResetBehavior>
+      <!--<PreOpenResetBehavior>DTR;true</PreOpenResetBehavior>-->
       <!--<PostOpenResetBehavior>DTR-RTS;50;250;false</PostOpenResetBehavior> -->
-      <CloseResetBehavior>DTR-RTS;50;250;false</CloseResetBehavior>
+      <!--<CloseResetBehavior>DTR-RTS;50;250;false</CloseResetBehavior>-->
       <SleepAfterOpen>250</SleepAfterOpen>
-      <ReadTimeout>1000</ReadTimeout>
-      <WriteTimeout>1000</WriteTimeout>
+      <ReadTimeout>5000</ReadTimeout>
+      <WriteTimeout>5000</WriteTimeout>
       <Protocol>Stk500v1</Protocol>
     </Arduino>
   </Arduinos>

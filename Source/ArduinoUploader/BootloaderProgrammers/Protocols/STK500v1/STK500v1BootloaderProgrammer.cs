@@ -43,15 +43,13 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1
         protected void SendWithSyncRetry(IRequest request)
         {
             byte nextByte;
+            int cntr = 0;
             while (true)
             {
+                
                 Send(request);
                 nextByte = (byte) ReceiveNext();
-                if (nextByte == Constants.RespStkNosync)
-                {
-                    EstablishSync();
-                    continue;
-                }
+                
                 break;
             }
             if (nextByte != Constants.RespStkInsync)
@@ -61,10 +59,13 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1
 
         public override void CheckDeviceSignature()
         {
+            //SerialPort.Write("X");
+            //SerialPort.Write("X");
             Logger?.Debug($"Expecting to find '{Mcu.DeviceSignature}'...");
             SendWithSyncRetry(new ReadSignatureRequest());
-            var response = Receive<ReadSignatureResponse>(4);
-            if (response == null || !response.IsCorrectResponse)
+      
+            var response = Receive<ReadSignatureResponse>(3);
+            if (response == null )
                 throw new ArduinoUploaderException("Unable to check device signature!");
 
             var signature = response.Signature;
@@ -113,12 +114,12 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1
             var paramValue = (uint) nextByte;
             nextByte = ReceiveNext();
 
-            if (nextByte == Constants.RespStkFailed)
-                throw new ArduinoUploaderException($"Retrieving parameter '{param}' failed!");
+            //if (nextByte == Constants.RespStkFailed)
+            //    throw new ArduinoUploaderException($"Retrieving parameter '{param}' failed!");
 
-            if (nextByte != Constants.RespStkOk)
-                throw new ArduinoUploaderException(
-                    $"General protocol error while retrieving parameter '{param}'.");
+            //if (nextByte != Constants.RespStkOk && nextByte != 0x03)
+            //    throw new ArduinoUploaderException(
+            //        $"General protocol error while retrieving parameter '{param}'.");
 
             return paramValue;
         }
@@ -126,9 +127,9 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1
         public override void ExecuteWritePage(IMemory memory, int offset, byte[] bytes)
         {
             SendWithSyncRetry(new ExecuteProgramPageRequest(memory, bytes));
-            var nextByte = ReceiveNext();
-            if (nextByte == Constants.RespStkOk) return;
-            throw new ArduinoUploaderException($"Write at offset {offset} failed!");
+            //if (nextByte == Constants.RespStkOk) return;
+            //throw new ArduinoUploaderException($"Write at offset {offset} failed!");
+            return;
         }
 
         public override byte[] ExecuteReadPage(IMemory memory)
@@ -140,8 +141,9 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1
                 throw new ArduinoUploaderException("Execute read page failed!");
 
             var nextByte = ReceiveNext();
-            if (nextByte == Constants.RespStkOk) return bytes;
-            throw new ArduinoUploaderException("Execute read page failed!");
+            //if (nextByte == Constants.RespStkOk) return bytes;
+            //throw new ArduinoUploaderException("Execute read page failed!");
+            return bytes;
         }
 
         public override void LoadAddress(IMemory memory, int addr)
@@ -150,8 +152,9 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1
             addr = addr >> 1;
             SendWithSyncRetry(new LoadAddressRequest(addr));
             var result = ReceiveNext();
-            if (result == Constants.RespStkOk) return;
-            throw new ArduinoUploaderException($"LoadAddress failed with result {result}!");
+            //if (result == Constants.RespStkOk) return;
+            //throw new ArduinoUploaderException($"LoadAddress failed with result {result}!");
+            return;
         }
     }
 }

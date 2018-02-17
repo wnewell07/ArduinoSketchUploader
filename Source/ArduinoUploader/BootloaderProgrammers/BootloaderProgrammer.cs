@@ -54,7 +54,7 @@ namespace ArduinoUploader.BootloaderProgrammers
                     Logger?.Debug($"Executing paged write @ address {offset} (page size {pageSize})...");
                     var bytesToCopy = memoryBlock.Cells.Skip(offset).Take(pageSize).Select(x => x.Value).ToArray();
 
-                    Logger?.Trace($"Checking if bytes at offset {offset} need to be overwritten...");
+                    Logger?.Debug($"Checking if bytes at offset {offset} need to be overwritten...");
                     LoadAddress(flashMem, offset);
                     var bytesAlreadyPresent = ExecuteReadPage(flashMem);
                     if (bytesAlreadyPresent.SequenceEqual(bytesToCopy))
@@ -67,7 +67,7 @@ namespace ArduinoUploader.BootloaderProgrammers
                     LoadAddress(flashMem, offset);
                     ExecuteWritePage(flashMem, offset, bytesToCopy);
 
-                    Logger?.Trace("Page written, now verifying...");
+                    Logger?.Info("Page written, now verifying...");
                     Thread.Sleep(10);
                     LoadAddress(flashMem, offset);
                     var verify = ExecuteReadPage(flashMem);

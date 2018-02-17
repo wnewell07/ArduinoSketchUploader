@@ -13,7 +13,7 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1.Messages
             Bytes[i++] = Constants.CmdStkProgPage;
             Bytes[i++] = (byte) ((size >> 8) & 0xff);
             Bytes[i++] = (byte) (size & 0xff);
-            Bytes[i++] = (byte) (memory.Type == MemoryType.Eeprom ? 'E' : 'F');
+            Bytes[i++] = Constants.flashCode;//(byte) (memory.Type == MemoryType.Eeprom ? 'E' : 'F');
             Buffer.BlockCopy(bytesToCopy, 0, Bytes, i, size);
             i += size;
             Bytes[i] = Constants.SyncCrcEop;

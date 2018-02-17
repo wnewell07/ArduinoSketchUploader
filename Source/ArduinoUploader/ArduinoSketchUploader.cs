@@ -119,7 +119,8 @@ namespace ArduinoUploader
                     programmer.Open();
 
                     Logger?.Info("Establishing sync...");
-                    programmer.EstablishSync();
+                    //programmer.EstablishSync();
+                    
                     Logger?.Info("Sync established.");
 
                     Logger?.Info("Checking device signature...");

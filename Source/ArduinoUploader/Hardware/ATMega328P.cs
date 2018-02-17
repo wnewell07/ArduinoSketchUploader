@@ -35,7 +35,7 @@ namespace ArduinoUploader.Hardware
 
         public override byte PollValue => 0x53;
 
-        public override string DeviceSignature => "1E-95-0F";
+        public override string DeviceSignature => "1E-95-16";
 
         public override IDictionary<Command, byte[]> CommandBytes => 
             new Dictionary<Command, byte[]>();

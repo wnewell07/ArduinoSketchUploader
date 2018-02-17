@@ -2,7 +2,9 @@
 using System.Threading;
 using ArduinoUploader.BootloaderProgrammers.Protocols;
 using ArduinoUploader.Hardware;
-using RJCP.IO.Ports;
+//using RJCP.IO.Ports;
+using System.IO.Ports;
+
 
 namespace ArduinoUploader.BootloaderProgrammers
 {
@@ -16,15 +18,16 @@ namespace ArduinoUploader.BootloaderProgrammers
             SerialPortConfig = serialPortConfig;
         }
 
-        protected SerialPortStream SerialPort { get; set; }
+        protected SerialPort SerialPort { get; set; }
 
         public override void Open()
         {
             var portName = SerialPortConfig.PortName;
             var baudRate = SerialPortConfig.BaudRate;
+
             Logger?.Info($"Opening serial port {portName} - baudrate {baudRate}");
 
-            SerialPort = new SerialPortStream(portName, baudRate)
+            SerialPort = new SerialPort(portName, baudRate)
             {
                 ReadTimeout = SerialPortConfig.ReadTimeOut,
                 WriteTimeout = SerialPortConfig.WriteTimeOut
@@ -34,11 +37,18 @@ namespace ArduinoUploader.BootloaderProgrammers
             if (preOpen != null)
             {
                 Logger?.Info($"Executing Post Open behavior ({preOpen})...");
-                SerialPort = preOpen.Reset(SerialPort, SerialPortConfig);
+                //SerialPort = preOpen.Reset(SerialPort, SerialPortConfig);
             }
 
             try
             {
+                SerialPort.StopBits = System.IO.Ports.StopBits.One;
+                SerialPort.Parity = System.IO.Ports.Parity.None;
+                SerialPort.DataBits = 8;
+                SerialPort.Handshake = System.IO.Ports.Handshake.None;
+                ////SerialPort.PortName = "COM8";
+                ////SerialPort.BaudRate = 9600;
+
                 SerialPort.Open();
             }
             catch (ObjectDisposedException ex)
@@ -57,7 +67,7 @@ namespace ArduinoUploader.BootloaderProgrammers
             if (postOpen != null)
             {
                 Logger?.Info($"Executing Post Open behavior ({postOpen})...");
-                SerialPort = postOpen.Reset(SerialPort, SerialPortConfig);
+                //SerialPort = postOpen.Reset(SerialPort, SerialPortConfig);
             }
 
             var sleepAfterOpen = SerialPortConfig.SleepAfterOpen;
@@ -78,7 +88,7 @@ namespace ArduinoUploader.BootloaderProgrammers
             if (preClose != null)
             {
                 Logger?.Info("Resetting...");
-                SerialPort = preClose.Reset(SerialPort, SerialPortConfig);
+                //SerialPort = preClose.Reset(SerialPort, SerialPortConfig);
             }
 
             Logger?.Info("Closing serial port...");
@@ -132,14 +142,16 @@ namespace ArduinoUploader.BootloaderProgrammers
             var retrieved = 0;
             try
             {
+
                 while (retrieved < length)
                     retrieved += SerialPort.Read(bytes, retrieved, length - retrieved);
 
-                Logger?.Trace($"Receiving bytes: {BitConverter.ToString(bytes)}");
+                Logger?.Debug($"Receiving bytes: {BitConverter.ToString(bytes)}");
                 return bytes;
             }
             catch (TimeoutException)
             {
+                
                 return null;
             }
         }
