@@ -32,8 +32,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="FTD2XX_NET">
-      <HintPath>..\..\..\FTD2XX\FTD2XX_NET_v1.0.14\FTD2XX_NET.dll</HintPath>
+    <Reference Include="FTD2XX_NET, Version=1.0.14.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\FTD2XX.Net.1.0.14\lib\FTD2XX_NET.dll</HintPath>
     </Reference>
     <Reference Include="IntelHexFormatReader, Version=2.2.3.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -143,6 +143,9 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="FTD2XX_NET.XML" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
