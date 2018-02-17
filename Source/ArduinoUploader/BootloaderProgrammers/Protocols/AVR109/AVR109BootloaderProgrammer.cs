@@ -20,24 +20,23 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.AVR109
         {
             try
             {
-                var currentPort = SerialPort.PortName;
-                Logger?.Info($"Closing {currentPort}...");
+                Logger?.Info($"Closing Port...");
                 SerialPort.Close();
-                Logger?.Info($"Waiting for virtual port {currentPort} to disappear...");
+                Logger?.Info($"Waiting for virtual port to disappear...");
 
-                const int timeoutVirtualPointDisappearance = 10000;
-                const int virtualPortDisappearanceInterval = 100;
-                var result = WaitHelper.WaitFor(timeoutVirtualPointDisappearance, virtualPortDisappearanceInterval,
-                    () => SerialPortStream.GetPortNames().Contains(currentPort) ? null : currentPort,
-                    (i, item, interval) =>
-                        item == null
-                            ? $"T+{i * interval} - Port still present..."
-                            : $"T+{i * interval} - Port disappeared: {item}!");
+                //const int timeoutVirtualPointDisappearance = 10000;
+                //const int virtualPortDisappearanceInterval = 100;
+                //var result = WaitHelper.WaitFor(timeoutVirtualPointDisappearance, virtualPortDisappearanceInterval,
+                //    () => SerialPortStream.GetPortNames().Contains(currentPort) ? null : currentPort,
+                //    (i, item, interval) =>
+                //        item == null
+                //            ? $"T+{i * interval} - Port still present..."
+                //            : $"T+{i * interval} - Port disappeared: {item}!");
 
-                if (result == null)
-                    Logger?.Warn(
-                        $"Virtual COM port {currentPort} was still present "
-                        + "after {timeoutVirtualPointDisappearance} ms!");
+                //if (result == null)
+                //    Logger?.Warn(
+                //        $"Virtual COM port {currentPort} was still present "
+                //        + "after {timeoutVirtualPointDisappearance} ms!");
             }
             catch (Exception ex)
             {

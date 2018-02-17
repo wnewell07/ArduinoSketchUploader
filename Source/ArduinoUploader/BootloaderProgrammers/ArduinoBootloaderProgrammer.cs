@@ -1,159 +1,148 @@
 ﻿using System;
 using System.Threading;
+
 using ArduinoUploader.BootloaderProgrammers.Protocols;
 using ArduinoUploader.Hardware;
+
+using FTD2XX_NET;
 //using RJCP.IO.Ports;
-using System.IO.Ports;
 
+namespace ArduinoUploader.BootloaderProgrammers {
 
-namespace ArduinoUploader.BootloaderProgrammers
-{
-    internal abstract class ArduinoBootloaderProgrammer : BootloaderProgrammer
-    {
-        protected SerialPortConfig SerialPortConfig;
+	internal abstract class ArduinoBootloaderProgrammer : BootloaderProgrammer {
 
-        protected ArduinoBootloaderProgrammer(SerialPortConfig serialPortConfig, IMcu mcu)
-            : base(mcu)
-        {
-            SerialPortConfig = serialPortConfig;
-        }
+		private FTDI.FT_STATUS _status = FTDI.FT_STATUS.FT_OK;
+		protected SerialPortConfig SerialPortConfig;
 
-        protected SerialPort SerialPort { get; set; }
+		protected ArduinoBootloaderProgrammer(SerialPortConfig serialPortConfig, IMcu mcu)
+			: base(mcu) {
+			SerialPortConfig = serialPortConfig;
+		}
 
-        public override void Open()
-        {
-            var portName = SerialPortConfig.PortName;
-            var baudRate = SerialPortConfig.BaudRate;
+		protected FTDI SerialPort { get; set; }
 
-            Logger?.Info($"Opening serial port {portName} - baudrate {baudRate}");
+		public override void Open() {
+			var portName = SerialPortConfig.PortName;
+			var baudRate = SerialPortConfig.BaudRate;
 
-            SerialPort = new SerialPort(portName, baudRate)
-            {
-                ReadTimeout = SerialPortConfig.ReadTimeOut,
-                WriteTimeout = SerialPortConfig.WriteTimeOut
-            };
+			Logger?.Info($"Opening serial port {portName} - baudrate {baudRate}");
 
-            var preOpen = SerialPortConfig.PreOpenResetBehavior;
-            if (preOpen != null)
-            {
-                Logger?.Info($"Executing Post Open behavior ({preOpen})...");
-                //SerialPort = preOpen.Reset(SerialPort, SerialPortConfig);
-            }
+			var description = "NEWGY3050";
 
-            try
-            {
-                SerialPort.StopBits = System.IO.Ports.StopBits.One;
-                SerialPort.Parity = System.IO.Ports.Parity.None;
-                SerialPort.DataBits = 8;
-                SerialPort.Handshake = System.IO.Ports.Handshake.None;
-                ////SerialPort.PortName = "COM8";
-                ////SerialPort.BaudRate = 9600;
+			// Create new instance of the FTDI device class
+			SerialPort?.Close();
+			SerialPort = new FTDI();
 
-                SerialPort.Open();
-            }
-            catch (ObjectDisposedException ex)
-            {
-                throw new ArduinoUploaderException(
-                    $"Unable to open serial port {portName} - {ex.Message}.");
-            }
-            catch (InvalidOperationException ex)
-            {
-                throw new ArduinoUploaderException(
-                    $"Unable to open serial port {portName} - {ex.Message}.");
-            }
-            Logger?.Trace($"Opened serial port {portName} with baud rate {baudRate}!");
+			// Open first device in our list by the description
+			_status = SerialPort.OpenByDescription(description);
 
-            var postOpen = SerialPortConfig.PostOpenResetBehavior;
-            if (postOpen != null)
-            {
-                Logger?.Info($"Executing Post Open behavior ({postOpen})...");
-                //SerialPort = postOpen.Reset(SerialPort, SerialPortConfig);
-            }
+			// Reset the device
+			_status = SerialPort.ResetDevice();
 
-            var sleepAfterOpen = SerialPortConfig.SleepAfterOpen;
-            if (SerialPortConfig.SleepAfterOpen <= 0) return;
+			// Purge the device
+			_status = SerialPort.Purge(3);
 
-            Logger?.Trace($"Sleeping for {sleepAfterOpen} ms after open...");
-            Thread.Sleep(sleepAfterOpen);
-        }
+			// Set the baud rate to 115200 
+			_status = SerialPort.SetBaudRate(115200);
 
-        public override void EstablishSync()
-        {
-            // Do nothing.
-        }
+			// Set data characteristics - Data bits, Stop bits, Parity
+			_status = SerialPort.SetDataCharacteristics(FTDI.FT_DATA_BITS.FT_BITS_8, FTDI.FT_STOP_BITS.FT_STOP_BITS_1, FTDI.FT_PARITY.FT_PARITY_NONE);
 
-        public override void Close()
-        {
-            var preClose = SerialPortConfig.CloseResetAction;
-            if (preClose != null)
-            {
-                Logger?.Info("Resetting...");
-                //SerialPort = preClose.Reset(SerialPort, SerialPortConfig);
-            }
+			// Set read timeout to 1 seconds, write timeout to 100
+			_status = SerialPort.SetTimeouts(1000, 0);
 
-            Logger?.Info("Closing serial port...");
-            SerialPort.DtrEnable = false;
-            SerialPort.RtsEnable = false;
-            try
-            {
-                SerialPort.Close();
-            }
-            catch (Exception)
-            {
-                // Ignore
-            }
-        }
+			// Set flow control - set RTS/CTS flow control
+			_status = SerialPort.SetFlowControl(FTDI.FT_FLOW_CONTROL.FT_FLOW_NONE, 0, 0);
 
-        protected virtual void Send(IRequest request)
-        {
-            var bytes = request.Bytes;
-            var length = bytes.Length;
-            Logger?.Trace($"Sending {length} bytes: {Environment.NewLine}"
-                + $"{BitConverter.ToString(bytes)}");
-            SerialPort.Write(bytes, 0, length);
-        }
+			// Set RTS
+			_status = SerialPort.SetRTS(true);
 
-        protected TResponse Receive<TResponse>(int length = 1) 
-            where TResponse : Response, new()
-        {
-            var bytes = ReceiveNext(length);
-            if (bytes == null) return null;
-            return new TResponse {Bytes = bytes};
-        }
+			// Set DTR
+			_status = SerialPort.SetDTR(true);
 
-        protected int ReceiveNext()
-        {
-            var bytes = new byte[1];
-            try
-            {
-                SerialPort.Read(bytes, 0, 1);
-                Logger?.Trace($"Receiving byte: {BitConverter.ToString(bytes)}");
-                return bytes[0];
-            }
-            catch (TimeoutException)
-            {
-                return -1;
-            }
-        }
+			Logger?.Trace($"Opened serial port {portName} with baud rate {baudRate}!");
 
-        protected byte[] ReceiveNext(int length)
-        {
-            var bytes = new byte[length];
-            var retrieved = 0;
-            try
-            {
+			var postOpen = SerialPortConfig.PostOpenResetBehavior;
+			if (postOpen != null) {
+				Logger?.Info($"Executing Post Open behavior ({postOpen})...");
+				//SerialPort = postOpen.Reset(SerialPort, SerialPortConfig);
+			}
 
-                while (retrieved < length)
-                    retrieved += SerialPort.Read(bytes, retrieved, length - retrieved);
+			var sleepAfterOpen = SerialPortConfig.SleepAfterOpen;
+			if (SerialPortConfig.SleepAfterOpen <= 0)
+				return;
 
-                Logger?.Debug($"Receiving bytes: {BitConverter.ToString(bytes)}");
-                return bytes;
-            }
-            catch (TimeoutException)
-            {
-                
-                return null;
-            }
-        }
-    }
+			Logger?.Trace($"Sleeping for {sleepAfterOpen} ms after open...");
+			Thread.Sleep(sleepAfterOpen);
+		}
+
+		public override void EstablishSync() {
+			// Do nothing.
+		}
+
+		public override void Close() {
+			var preClose = SerialPortConfig.CloseResetAction;
+			if (preClose != null) {
+				Logger?.Info("Resetting...");
+				//SerialPort = preClose.Reset(SerialPort, SerialPortConfig);
+			}
+
+			Logger?.Info("Closing serial port...");
+			try {
+				SerialPort.Close();
+			} catch (Exception) {
+				// Ignore
+			}
+		}
+
+		protected virtual void Send(IRequest request) {
+			var bytes = request.Bytes;
+			var length = bytes.Length;
+			Logger?.Trace($"Sending {length} bytes: {Environment.NewLine}"
+			              + $"{BitConverter.ToString(bytes)}");
+			UInt32 numBytesWritten = 0;
+			SerialPort.Write(bytes, length, ref numBytesWritten);
+		}
+
+		protected TResponse Receive<TResponse>(int length = 1)
+			where TResponse : Response, new() {
+			var bytes = ReceiveNext(length);
+			if (bytes == null)
+				return null;
+			return new TResponse {Bytes = bytes};
+		}
+
+		protected int ReceiveNext() {
+			var bytes = new byte[1];
+			try {
+				UInt32 numBytesRead = 0;
+				SerialPort.Read(bytes, 0, ref numBytesRead);
+				Logger?.Trace($"Receiving byte: {BitConverter.ToString(bytes)}");
+				return bytes[0];
+			} catch (TimeoutException) {
+				return -1;
+			}
+		}
+
+		protected byte[] ReceiveNext(int length) {
+			var bytes = new byte[length];
+			uint retrieved = 0;
+			try {
+
+				UInt32 numBytesRead = 0;
+				while (retrieved < length) {
+					SerialPort.Read(bytes, (uint)length, ref numBytesRead);
+					retrieved += numBytesRead;
+				}
+
+				Logger?.Debug($"Receiving bytes: {BitConverter.ToString(bytes)}");
+				return bytes;
+			} catch (TimeoutException) {
+
+				return null;
+			}
+		}
+
+	}
+
 }
