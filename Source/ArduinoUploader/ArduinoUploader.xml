@@ -66,8 +66,8 @@
       <!--<PostOpenResetBehavior>DTR-RTS;50;250;false</PostOpenResetBehavior> -->
       <!--<CloseResetBehavior>DTR-RTS;50;250;false</CloseResetBehavior>-->
       <SleepAfterOpen>250</SleepAfterOpen>
-      <ReadTimeout>5000</ReadTimeout>
-      <WriteTimeout>5000</WriteTimeout>
+      <ReadTimeout>500</ReadTimeout>
+      <WriteTimeout>500</WriteTimeout>
       <Protocol>Stk500v1</Protocol>
     </Arduino>
   </Arduinos>

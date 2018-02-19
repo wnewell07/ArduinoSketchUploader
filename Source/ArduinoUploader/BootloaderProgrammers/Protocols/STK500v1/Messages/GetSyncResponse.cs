@@ -4,4 +4,4 @@
     {
         internal bool IsInSync => Bytes.Length > 0 && Bytes[0] == Constants.RespStkInsync;
     }
-}
+} 

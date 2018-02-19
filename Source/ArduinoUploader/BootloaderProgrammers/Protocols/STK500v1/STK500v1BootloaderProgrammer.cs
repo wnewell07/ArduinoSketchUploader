@@ -22,7 +22,11 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1
             while (retryCounter++ < maxRetries)
             {
                 var result = Receive<GetSyncResponse>();
-                if (result == null) continue;
+                if (result == null)
+                {
+                    Send(new GetSyncRequest());
+                    continue;
+                }
                 if (result.IsInSync) break;
                 Thread.Sleep(20);
             }
@@ -42,36 +46,58 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1
 
         protected void SendWithSyncRetry(IRequest request)
         {
-            byte nextByte;
+            var nextByte = new byte[1];
             int cntr = 0;
             while (true)
             {
                 
                 Send(request);
-                nextByte = (byte) ReceiveNext();
+                //Thread.Sleep(500);
+                nextByte = ReceiveNext(1);
+                if(nextByte[0] == Constants.RespStkInsync || nextByte[0] == Constants.RespStkOk || request.GetType() == typeof(GetParameterRequest) || request.GetType() == typeof(SetDeviceProgrammingParametersRequest) || request.GetType() == typeof(EnableProgrammingModeRequest))
+                {
+                    //EstablishSync();
+                    break;
+                }
+
                 
-                break;
             }
-            if (nextByte != Constants.RespStkInsync)
+            if ((nextByte[0] != Constants.RespStkInsync && nextByte[0] != Constants.RespStkOk) && request.GetType() != typeof(GetParameterRequest) && request.GetType() != typeof(SetDeviceProgrammingParametersRequest) && request.GetType() != typeof(EnableProgrammingModeRequest))
+            {
                 throw new ArduinoUploaderException(
                     $"Unable to aqcuire sync in SendWithSyncRetry for request of type {request.GetType()}!");
+            }
+            //else
+            //{
+            //    if (nextByte[0] == Constants.RespStkOk || nextByte[0] == Constants.RespStkInsync)
+            //    {
+            //        nextByte = ReceiveNext(1);
+            //    }
+            //}
+
         }
 
         public override void CheckDeviceSignature()
         {
-            //SerialPort.Write("X");
-            //SerialPort.Write("X");
+            
             Logger?.Debug($"Expecting to find '{Mcu.DeviceSignature}'...");
+            Thread.Sleep(1000);
             SendWithSyncRetry(new ReadSignatureRequest());
-      
+            //bytes[0] = (byte)'u';
+            //SerialPort.Write(bytes, 1, ref bytesWritten);
+            //Thread.Sleep(250);
+            //bytes[0] = Constants.SyncCrcEop;
+            //SerialPort.Write(bytes, 1, ref bytesWritten);
+            Thread.Sleep(1000);
             var response = Receive<ReadSignatureResponse>(3);
+            //var response = ReceiveNext();
             if (response == null )
                 throw new ArduinoUploaderException("Unable to check device signature!");
 
-            var signature = response.Signature;
-            if (BitConverter.ToString(signature) != Mcu.DeviceSignature)
-                throw new ArduinoUploaderException(
-                    $"Unexpected device signature - found '{BitConverter.ToString(signature)}'- expected '{Mcu.DeviceSignature}'.");
+            ////var signature = response.Signature;
+            //if (BitConverter.ToString(signature) != Mcu.DeviceSignature)
+            //    throw new ArduinoUploaderException(
+            //        $"Unexpected device signature - found '{BitConverter.ToString(signature)}'- expected '{Mcu.DeviceSignature}'.");
         }
 
         public override void InitializeDevice()
@@ -84,7 +110,7 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1
             SendWithSyncRetry(new SetDeviceProgrammingParametersRequest((Mcu) Mcu));
             var nextByte = ReceiveNext();
 
-            if (nextByte != Constants.RespStkOk)
+            if (nextByte != Constants.RespStkOk && nextByte != Constants.RespStkInsync)
                 throw new ArduinoUploaderException("Unable to set device programming parameters!");
         }
 
@@ -92,7 +118,7 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1
         {
             SendWithSyncRetry(new EnableProgrammingModeRequest());
             var nextByte = ReceiveNext();
-            if (nextByte == Constants.RespStkOk) return;
+            if (nextByte == Constants.RespStkOk || nextByte == Constants.RespStkInsync) return;
             if (nextByte == Constants.RespStkNodevice || nextByte == Constants.RespStkFailed)
                 throw new ArduinoUploaderException("Unable to enable programming mode on the device!");
         }
@@ -101,7 +127,7 @@ namespace ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1
         {
             SendWithSyncRetry(new LeaveProgrammingModeRequest());
             var nextByte = ReceiveNext();
-            if (nextByte == Constants.RespStkOk) return;
+            if (nextByte == Constants.RespStkOk || nextByte == Constants.RespStkInsync) return;
             if (nextByte == Constants.RespStkNodevice || nextByte == Constants.RespStkFailed)
                 throw new ArduinoUploaderException("Unable to leave programming mode on the device!");
         }

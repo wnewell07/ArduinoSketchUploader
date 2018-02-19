@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2003
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArduinoSketchUploader", "ArduinoSketchUploader\ArduinoSketchUploader.csproj", "{679338C5-351A-4E24-961B-A1550FFF4C88}"
 EndProject
@@ -32,5 +32,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{679338C5-351A-4E24-961B-A1550FFF4C88} = {593154F0-8779-4854-AD95-FE1BB4741B11}
 		{76B83943-5E26-4A25-A2BC-074C13744150} = {FBF29502-C0C8-43D7-9618-C205E98480E6}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9999E284-957C-4169-9937-3EEF6C09B8AA}
 	EndGlobalSection
 EndGlobal

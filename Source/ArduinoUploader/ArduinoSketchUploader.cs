@@ -116,14 +116,20 @@ namespace ArduinoUploader
 
                 try
                 {
+
+                    Logger?.Info("Establishing memory block contents...");
+                    var memoryBlockContents = ReadHexFile(hexFileContents, mcu.Flash.Size);
+
                     programmer.Open();
 
+                    programmer.sendUpdateCommand();
+
                     Logger?.Info("Establishing sync...");
-                    //programmer.EstablishSync();
-                    
+                    programmer.EstablishSync();
                     Logger?.Info("Sync established.");
 
                     Logger?.Info("Checking device signature...");
+                    
                     programmer.CheckDeviceSignature();
                     Logger?.Info("Device signature checked.");
 

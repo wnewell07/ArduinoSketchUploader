@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Threading;
+using System.Linq;
 
 using ArduinoUploader.BootloaderProgrammers.Protocols;
 using ArduinoUploader.Hardware;
 
 using FTD2XX_NET;
+using ArduinoUploader.BootloaderProgrammers.Protocols.STK500v1;
+//using System.IO.Ports;
 //using RJCP.IO.Ports;
 
 namespace ArduinoUploader.BootloaderProgrammers {
@@ -49,7 +52,8 @@ namespace ArduinoUploader.BootloaderProgrammers {
 			_status = SerialPort.SetDataCharacteristics(FTDI.FT_DATA_BITS.FT_BITS_8, FTDI.FT_STOP_BITS.FT_STOP_BITS_1, FTDI.FT_PARITY.FT_PARITY_NONE);
 
 			// Set read timeout to 1 seconds, write timeout to 100
-			_status = SerialPort.SetTimeouts(1000, 0);
+			_status = SerialPort.SetTimeouts(1, 100);
+           // _status = SerialPort.
 
 			// Set flow control - set RTS/CTS flow control
 			_status = SerialPort.SetFlowControl(FTDI.FT_FLOW_CONTROL.FT_FLOW_NONE, 0, 0);
@@ -76,6 +80,17 @@ namespace ArduinoUploader.BootloaderProgrammers {
 			Thread.Sleep(sleepAfterOpen);
 		}
 
+        public void sendUpdateCommand()
+        {
+            uint bytesWritten = 0;
+            var bytes = new byte[1];
+            bytes[0] = (byte)'X';
+            SerialPort.Write(bytes, 1, ref bytesWritten);
+            Thread.Sleep(250);
+            SerialPort.Write(bytes, 1, ref bytesWritten);
+            Thread.Sleep(250);
+        }
+
 		public override void EstablishSync() {
 			// Do nothing.
 		}
@@ -98,10 +113,12 @@ namespace ArduinoUploader.BootloaderProgrammers {
 		protected virtual void Send(IRequest request) {
 			var bytes = request.Bytes;
 			var length = bytes.Length;
-			Logger?.Trace($"Sending {length} bytes: {Environment.NewLine}"
+            uint tmp = 0;
+			Logger?.Debug($"Sending {length} bytes: {Environment.NewLine}"
 			              + $"{BitConverter.ToString(bytes)}");
 			UInt32 numBytesWritten = 0;
 			SerialPort.Write(bytes, length, ref numBytesWritten);
+            tmp = numBytesWritten;
 		}
 
 		protected TResponse Receive<TResponse>(int length = 1)
@@ -114,32 +131,59 @@ namespace ArduinoUploader.BootloaderProgrammers {
 
 		protected int ReceiveNext() {
 			var bytes = new byte[1];
+            
 			try {
 				UInt32 numBytesRead = 0;
-				SerialPort.Read(bytes, 0, ref numBytesRead);
-				Logger?.Trace($"Receiving byte: {BitConverter.ToString(bytes)}");
+				SerialPort.Read(bytes, 1, ref numBytesRead);
+                if(numBytesRead == 0)
+                {
+                    throw new TimeoutException();
+                }
+				Logger?.Debug($"Receiving byte: {BitConverter.ToString(bytes)}");
 				return bytes[0];
 			} catch (TimeoutException) {
-				return -1;
+                //return null;
+                return -1;
 			}
 		}
 
 		protected byte[] ReceiveNext(int length) {
 			var bytes = new byte[length];
 			uint retrieved = 0;
+            uint prevRetrieved = 0;
+            DateTime timeout = DateTime.Now.AddSeconds(5);
+
 			try {
 
 				UInt32 numBytesRead = 0;
-				while (retrieved < length) {
-					SerialPort.Read(bytes, (uint)length, ref numBytesRead);
-					retrieved += numBytesRead;
-				}
+                while (retrieved < length)
+                {
+                    if (length > 120)
+                    {
+                        var singleByte = new byte[1];
+                        SerialPort.Read(singleByte, 1, ref numBytesRead);
+                        //SerialPort.Read(singleByte, 1, ref numBytesRead);
+                    }
+                    SerialPort.Read(bytes, (uint)length, ref numBytesRead);
 
-				Logger?.Debug($"Receiving bytes: {BitConverter.ToString(bytes)}");
+                    retrieved += numBytesRead;
+
+                    
+                    Thread.Sleep(50);
+                    if (DateTime.Now > timeout)
+                    {
+                        throw new TimeoutException();
+                    }
+                    
+                    prevRetrieved = retrieved;
+                }
+            
+                    Logger?.Debug($"Receiving bytes: {BitConverter.ToString(bytes)}");
+                
 				return bytes;
 			} catch (TimeoutException) {
 
-				return null;
+                return null;
 			}
 		}
 

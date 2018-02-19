@@ -6,7 +6,7 @@
         {
             Bytes = new[]
             {
-                Constants.CmdStkGetSync,
+               // Constants.CmdStkGetSync,
                 Constants.SyncCrcEop
             };
         }
